@@ -15,7 +15,7 @@ data/simulated/*
 !data/simulated/.gitkeep
 
 # Local-only documents (licensed copy of the paper, cited in README; working notes)
-docs/
+docs/*.pdf
 
 # OS / editor
 .DS_Store
