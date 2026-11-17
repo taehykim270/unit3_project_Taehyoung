@@ -21,3 +21,4 @@ docs/*.pdf
 .DS_Store
 .vscode/
 .ipynb_checkpoints/
+results/profiling/*.prof

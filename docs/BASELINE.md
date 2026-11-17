@@ -19,7 +19,28 @@
 even though the simulation loop itself is serial.
 
 ## 2. Profiling
-(Step 1.2-1.3)
+### 2.1 Function-level profile (cProfile)
+
+Command: `python -m src.profile_sim` (all 864 conditions, 10 reps each).
+Full output: `results/profiling/baseline_cprofile.txt`.
+
+| Component | cumtime (s) | Share |
+|---|---:|---:|
+| **Data generation** (`generate_replicate`) | 12.2 | 50% |
+| - Toeplitz designs (`Z @ L.T`) | 6.8 | 27% |
+| - sparse design | 2.8 | 12% |
+| - Gaussian design | 2.2 | 9% |
+| **PDW check** (`PrimalDualWitness.check`) | 12.2 | 50% |
+| - sklearn `Lasso.fit` on the support | 7.7 | 31% |
+|   - coordinate descent (`enet_path`) | 4.3 | 18% |
+|   - input validation / overhead | ~3.3 | 14% |
+| - numpy work inside `check` itself (tottime) | 4.1 | 17% |
+| Seeding (`replicate_rng`) | 0.1 | <1% |
+
+Observations:
+- Generating the data costs as much as running the method.
+- About 40% of the Lasso time is scikit-learn input validation, not optimization.
+
 
 ## 3. Computational complexity
 (Step 1.4)
