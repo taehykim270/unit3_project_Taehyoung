@@ -4,6 +4,7 @@ Profile a reduced version of the simulation study with cProfile.
 Run from the project root:
     python -m src.profile_sim                       # all conditions, 10 reps each
     python -m src.profile_sim --n-reps 5 --top 30
+    python -m src.profile_sim --lines               # line-by-line profile of the hot functions
 """
 
 import argparse
@@ -21,13 +22,34 @@ def parse_args():
     parser.add_argument("--top", type=int, default=20, help="rows to print in each table")
     parser.add_argument("--out", default="results/profiling/baseline.prof",
                         help="where to save the raw profile")
+    parser.add_argument("--lines", action="store_true",
+                        help="line-by-line profile of the hot functions instead of cProfile")   # helps are for my own understanding
     return parser.parse_args()
+
+
+def line_profile(config):
+    """Time every line of the functions that cProfile flagged as expensive."""
+    from line_profiler import LineProfiler
+    from src import dgps, methods
+
+    profiler = LineProfiler()
+    profiler.add_function(methods.PrimalDualWitness.check)
+    profiler.add_function(dgps.generate_replicate)
+    profiler.add_function(dgps.generate_toeplitz_design)
+    profiler.add_function(dgps.generate_sparse_design)
+
+    profiler.runcall(run_simulation, config)
+    profiler.print_stats(output_unit=1e-3)       # Report in milliseconds
 
 
 def main():
     args = parse_args()
     config = copy.deepcopy(CONFIG)
     config["n_reps"] = args.n_reps
+
+    if args.lines:
+        line_profile(config)
+        return
 
     with cProfile.Profile() as profiler:
         run_simulation(config)
