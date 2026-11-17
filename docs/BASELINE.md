@@ -59,10 +59,31 @@ Full output: `results/profiling/baseline_lines.txt`.
 generation time), (3) copying columns of `X` by fancy indexing in `check`, (4) the O(np^2)
 Toeplitz product `Z @ L.T`.
 
-
-
 ## 3. Computational complexity
-(Step 1.4)
+`python -m src.complexity` times one replicate (median of 5) in the linear regime, with data generation (DGP) and the PDW check timed separately.  
+Raw times: `results/profiling/complexity_baseline.csv`.
+
+**Theory** (T = number of coordinate-descent iterations):
+
+| Step | Cost |
+|---|---|
+| draw X | O(np) |
+| Toeplitz `Z @ L.T` | O(np^2) |
+| sklearn Lasso on X_S | O(T nk) |
+| `X[:, off_support].T @ residual` | O(n(p-k)) |
+
+**Empirical log-log slopes:**
+
+| Grid | Design | DGP | check | total |
+|---|---|---:|---:|---:|
+| n (p = 512) | identity | 0.99 | 0.49 | 0.67 |
+| n (p = 512) | toeplitz | 0.83 | 0.35 | 0.58 |
+| p (theta = 1) | identity | 2.15 | 1.65 | 1.82 |
+| p (theta = 1) | toeplitz | 2.31 | 1.57 | 1.90 |
+
+- n grid: data generation is linear in n as predicted. The check grows more slowly because the number of Lasso iterations falls as n grows (T = 82 at n = 235 vs 13 at n = 5636): near n = k the restricted problem is ill-conditioned.
+- p grid: n and k grow with p, so the predicted slopes are about 2+ (identity, O(p^2 log p)) and 3+ (Toeplitz, O(p^3 log p)). The Toeplitz slope is only 2.31 because at these sizes random number generation still accounts for a large share of its time; the O(np^2) product's share grows with p (Toeplitz/identity DGP time ratio rises from 1.14 at p = 64 to 1.72 at p = 1024).
+
 
 ## 4. Numerical stability
 (Step 1.5)
