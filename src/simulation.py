@@ -50,6 +50,7 @@ CONFIG = {
     "toeplitz_mu": {"toeplitz": 0.10,    # Sigma_ij = mu^|i-j| (eq. 46); mu = 0.10 as in the paper's Fig. 3
                     "toeplitz_strong": 0.50},   # extension: stronger correlation, less favourable to the Lasso
     "sparse_q": 0.10,                    # extension: sparse random design, fraction of nonzero entries
+    "toeplitz_method": "cholesky",       # "cholesky" (Unit 2) or "ar1" (Unit 3, O(np))
     "regimes": ["linear", "sublinear", "fractional"],   # Fig. 1 uses fractional only
     "p_values": [128, 256, 512],
     "thetas": [round(0.1 * i, 1) for i in range(1, 25)],   # 0.1, 0.2, ..., 2.4
@@ -59,6 +60,7 @@ CONFIG = {
         "pdw_restricted_lasso": {"zero_tol": 1e-8, "solver_tol": 1e-10},
         "pdw_closed_form": {},           # exact linear solve: no tolerances (sign_tol = 0)
         "full_lasso": {"zero_tol": 1e-8, "solver_tol": 1e-10},
+        "pdw_fast": {"rcond_tol": 1e-12},
     },
     "crosscheck_reps": 0,                # first m reps per condition also solved by FullLasso
                                          # (0: PDW is exact by Lemmas 2-3; the full-Lasso check lives in tests/)
@@ -69,6 +71,9 @@ CONFIG = {
 # Integer codes used to build per-condition seeds (keep fixed once results exist)
 DESIGN_CODES = {"identity": 0, "toeplitz": 1, "toeplitz_strong": 2, "sparse": 3}
 REGIME_CODES = {"linear": 0, "sublinear": 1, "fractional": 2}
+# Implementations compared in Unit 3
+IMPLS = {"baseline": {"check": "pdw_restricted_lasso", "toeplitz_method": "cholesky"},
+         "optimized": {"check": "pdw_fast", "toeplitz_method": "cholesky"}}             # ar1 is slower for p <= 512
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +138,7 @@ def run_condition(cond, config):
         data = generate_replicate(cond["n"], cond["p"], cond["k"], config["sigma"],
                                   config["beta_min"], rng, design=cond["design"],
                                   toeplitz_mu=config["toeplitz_mu"].get(cond["design"]),
-                                  sparse_q=config["sparse_q"])
+                                  sparse_q=config["sparse_q"], toeplitz_method=config["toeplitz_method"])
         result = check.check(data, cond["lam"])
 
         # Cross-check against a full numerical Lasso fit on the first few reps
@@ -209,6 +214,7 @@ def parse_args():
     parser.add_argument("--check", choices=sorted(CHECKS), help="override the support-recovery check")
     parser.add_argument("--crosscheck-reps", type=int, help="override sklearn cross-check reps")
     parser.add_argument("--output-dir", help="override output directory")
+    parser.add_argument("--impl", choices=sorted(IMPLS), help="baseline (Unit 2) or optimized (Unit 3) code")
     return parser.parse_args()
 
 
@@ -217,6 +223,8 @@ def main():
     args = parse_args()
 
     config = copy.deepcopy(CONFIG)   # deep: never mutate the nested dicts of the global CONFIG
+    if args.impl is not None:
+        config.update(IMPLS[args.impl])     # an explicit --check below still overrides this
     if args.n_reps is not None:
         config["n_reps"] = args.n_reps
     if args.check is not None:

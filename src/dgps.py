@@ -11,6 +11,7 @@ import math
 from functools import lru_cache
 
 import numpy as np
+from scipy.signal import lfilter
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +80,18 @@ def generate_toeplitz_design(n, p, mu, rng):
     return Z @ toeplitz_cholesky(p, mu).T
 
 
+def generate_toeplitz_design_ar1(n, p, mu, rng):
+    """Same X as generate_toeplitz_design (same draws Z, equal up to rounding), in O(np) instead of O(np^2).
+
+    Sigma_ij = mu^|i-j| is the covariance of an AR(1) sequence, so each row is built left to right:
+        x_1 = z_1,   x_j = mu * x_{j-1} + sqrt(1 - mu^2) * z_j.
+    This is exactly x = L z with L the Cholesky factor of Sigma.
+    """
+    Z = rng.standard_normal((n, p))
+    Z[:, 1:] *= math.sqrt(1.0 - mu**2)                 # first column stays z_1
+    return lfilter([1.0], [1.0, -mu], Z, axis=1)       # y_j = Z_j + mu * y_{j-1}, along each row
+
+
 # ---------------------------------------------------------------------------
 # Setting 3 (extension): sparse random design - used for Fig. 5
 # ---------------------------------------------------------------------------
@@ -129,7 +142,8 @@ def design_covariance(p, design, toeplitz_mu=None):
     raise ValueError(f"unknown design: {design}")
 
 
-def generate_replicate(n, p, k, sigma, beta_min, rng, design="identity", toeplitz_mu=None, sparse_q=None):
+def generate_replicate(n, p, k, sigma, beta_min, rng, design="identity", toeplitz_mu=None,
+                       sparse_q=None, toeplitz_method="cholesky", ):
     """Draw one data set (X, y, beta*, w) for a single simulation replicate.
 
     A new X, support, sign pattern and noise vector are drawn every call,
@@ -141,7 +155,9 @@ def generate_replicate(n, p, k, sigma, beta_min, rng, design="identity", toeplit
     elif design.startswith("toeplitz"):   # "toeplitz", "toeplitz_strong": differ only in mu
         if toeplitz_mu is None:
             raise ValueError("toeplitz design requires toeplitz_mu")
-        X = generate_toeplitz_design(n, p, toeplitz_mu, rng)
+        generate = {"cholesky": generate_toeplitz_design,                   # baseline: Z @ L.T, O(np^2)
+                    "ar1": generate_toeplitz_design_ar1}[toeplitz_method]   # optimized: O(np)
+        X = generate(n, p, toeplitz_mu, rng)
     elif design == "sparse":
         if sparse_q is None:
             raise ValueError("sparse design requires sparse_q")
