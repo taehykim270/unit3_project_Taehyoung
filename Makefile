@@ -12,6 +12,7 @@
 #   make benchmark        	total time baseline vs optimized, and speedup vs number of workers
 #   make parallel         	full study with the optimized code on all cores
 #   make stability-check  	warnings, convergence, conditioning, singular X_S (baseline and optimized)
+#   make perf-figures   	performance figures from the complexity and benchmark results
 
 # Use the project venv if it exists, otherwise whatever python3 is on PATH
 PYTHON ?= $(if $(wildcard venv/bin/python),venv/bin/python,python3)
@@ -24,7 +25,7 @@ FIG1     := results/figures/fig1_success_vs_n_and_theta.png
 PROF       := results/profiling
 BENCH_REPS ?= 20
 
-.PHONY: reproduce setup all simulate analyze figures test clean profile complexity benchmark parallel stability-check
+.PHONY: reproduce setup all simulate analyze figures test clean profile complexity benchmark parallel stability-check perf-figures
 
 # One command for a full from-scratch reproduction. Sub-makes run in sequence, so the steps
 # after setup use the venv it creates (even on a fresh clone without venv/)
@@ -97,3 +98,7 @@ stability-check:
 	mkdir -p $(PROF)
 	$(PYTHON) -m src.stability --impl baseline  > $(PROF)/stability_baseline.txt
 	$(PYTHON) -m src.stability --impl optimized > $(PROF)/stability_optimized.txt
+
+perf-figures:
+	$(PYTHON) -m src.perf_figures --bench-reps $(BENCH_REPS)
+	
