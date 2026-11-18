@@ -173,7 +173,8 @@ class PDWFast(SupportRecoveryCheck):
         X, y, beta, support = data["X"], data["y"], data["beta"], data["support"]
         n, p = X.shape
         k = len(support)
-        off_support = np.setdiff1d(np.arange(p), support)
+        off_support = np.ones(p, dtype=bool)
+        off_support[support] = False
         if n <= k:
             return _failed_check()
 
@@ -192,8 +193,8 @@ class PDWFast(SupportRecoveryCheck):
 
         # Step 3: dual feasibility on S^c
         residual = y - X_S @ beta_check_S
-        z_Sc = X[:, off_support].T @ residual / (n * lam)
-        max_abs_z = float(np.max(np.abs(z_Sc))) if len(off_support) else 0.0
+        z_Sc = (X.T @ residual)[off_support] / (n * lam)
+        max_abs_z = float(np.max(np.abs(z_Sc))) if z_Sc.size else 0.0
         dual_feasible = max_abs_z < 1.0
 
         # Step 4: sign consistency (exact linear solve, so the cutoff is 0)

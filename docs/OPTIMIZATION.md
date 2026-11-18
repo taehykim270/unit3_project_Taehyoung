@@ -6,6 +6,13 @@ Timings: `python -m src.simulation --n-reps 10` (all 864 conditions, 8,640 repli
 |---|---|---:|---:|
 | 0 | Baseline (Unit 2) | 22.3 | 1.00x |
 | 1 | Closed-form PDW with Cholesky (replaces sklearn Lasso) | 17.0 | 1.31x |
+| 2 | No column copies in `check` (`X.T @ r` + boolean mask) | 14.3 | 1.56x |
 
 ## 1. Closed-form PDW with Cholesky and a singularity guard
 - Verdicts identical to baseline on 8,640 / 8,640 replicates; `max_abs_z` differs by at most 4.8e-11 (sklearn's tolerance).
+
+## 2. Avoid copying columns of X in the dual-feasibility step
+- `X[:, off_support]` (fancy indexing) copies n x (p - k) numbers every replicate; `X.T` is a view.
+- `timeit` at n = 5636, p = 512, k = 205: `X[:, off].T @ r` 3.52 ms vs `(X.T @ r)[mask]` 0.268 ms (13x).
+- `np.setdiff1d` (sorts) replaced by a boolean mask.
+- Verdicts identical to baseline on 8,640 / 8,640 replicates.
