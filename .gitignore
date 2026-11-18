@@ -13,6 +13,8 @@ results/raw_*/
 data/simulated/*
 !results/raw/.gitkeep
 !data/simulated/.gitkeep
+results/profiling/*.prof
+results/profiling/stability_*.csv
 
 # Local-only documents (licensed copy of the paper, cited in README; working notes)
 docs/*.pdf
@@ -21,4 +23,3 @@ docs/*.pdf
 .DS_Store
 .vscode/
 .ipynb_checkpoints/
-results/profiling/*.prof
