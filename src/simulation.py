@@ -23,6 +23,7 @@ import time
 from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
+from joblib import Parallel, delayed
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,7 @@ CONFIG = {
                     "toeplitz_strong": 0.50},   # extension: stronger correlation, less favourable to the Lasso
     "sparse_q": 0.10,                    # extension: sparse random design, fraction of nonzero entries
     "toeplitz_method": "cholesky",       # "cholesky" (Unit 2) or "ar1" (Unit 3, O(np))
+    "n_jobs": 1,                         # worker processes for the conditions; -1 = all cores (Unit 3)
     "regimes": ["linear", "sublinear", "fractional"],   # Fig. 1 uses fractional only
     "p_values": [128, 256, 512],
     "thetas": [round(0.1 * i, 1) for i in range(1, 25)],   # 0.1, 0.2, ..., 2.4
@@ -155,12 +157,21 @@ def run_condition(cond, config):
 def run_simulation(config):
     """Run every condition in config and return the raw results as a DataFrame."""
     conditions = build_conditions(config)
-    logger.info("Running %d conditions x %d reps = %d replicates",
-                len(conditions), config["n_reps"], len(conditions) * config["n_reps"])
+    logger.info("Running %d conditions x %d reps = %d replicates on n_jobs = %d",
+                len(conditions), config["n_reps"], len(conditions) * config["n_reps"], config["n_jobs"])
+
+    if config["n_jobs"] == 1:
+        results = (run_condition(cond, config) for cond in conditions)
+    else:
+        # One task per condition. Every replicate has its own seed (replicate_rng), so results do not
+        # depend on which worker runs it, and joblib returns them in submission order: the rows are
+        # identical to a serial run.
+        results = Parallel(n_jobs=config["n_jobs"], return_as="generator")(
+            delayed(run_condition)(cond, config) for cond in conditions)
 
     records = []
-    for cond in tqdm(conditions, desc="conditions", unit="cond"):
-        records.extend(run_condition(cond, config))
+    for cond_records in tqdm(results, total=len(conditions), desc="conditions", unit="cond"):
+        records.extend(cond_records)
     return pd.DataFrame(records)
 
 
@@ -215,6 +226,7 @@ def parse_args():
     parser.add_argument("--crosscheck-reps", type=int, help="override sklearn cross-check reps")
     parser.add_argument("--output-dir", help="override output directory")
     parser.add_argument("--impl", choices=sorted(IMPLS), help="baseline (Unit 2) or optimized (Unit 3) code")
+    parser.add_argument("--n-jobs", type=int, help="worker processes (-1: all cores)")
     return parser.parse_args()
 
 
@@ -233,6 +245,8 @@ def main():
         config["crosscheck_reps"] = args.crosscheck_reps
     if args.output_dir is not None:
         config["output_dir"] = args.output_dir
+    if args.n_jobs is not None:
+        config["n_jobs"] = args.n_jobs
 
     start = time.time()
     df = run_simulation(config)
