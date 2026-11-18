@@ -9,14 +9,18 @@ Timings: `python -m src.simulation --n-reps 10` (all 864 conditions, 8,640 repli
 | 2 | No column copies in `check` (`X.T @ r` + boolean mask) | 14.3 | 1.56x |
 | 3 | + parallel over conditions (joblib, n_jobs = -1) | 6.8 | 3.28x |
 
+**Correctness:** `tests/test_regression.py` runs the same small study with both versions. Since the
+random draws are unchanged, it checks exact equality (per-replicate success/failure result, per-condition success
+rates, serial = parallel) instead of a statistical test, plus the edge cases n <= k and singular X_S.
+
 ## 1. Closed-form PDW with Cholesky and a singularity guard
-- Verdicts identical to baseline on 8,640 / 8,640 replicates; `max_abs_z` differs by at most 4.8e-11 (sklearn's tolerance).
+- Same success/failure result as the baseline on 8,640 / 8,640 replicates; `max_abs_z` differs by at most 4.8e-11 (sklearn's tolerance).
 
 ## 2. Avoid copying columns of X in the dual-feasibility step
 - `X[:, off_support]` (fancy indexing) copies n x (p - k) numbers every replicate; `X.T` is a view.
 - `timeit` at n = 5636, p = 512, k = 205: `X[:, off].T @ r` 3.52 ms vs `(X.T @ r)[mask]` 0.268 ms (13x).
 - `np.setdiff1d` (sorts) replaced by a boolean mask.
-- Verdicts identical to baseline on 8,640 / 8,640 replicates.
+- Same success/failure result as the baseline on 8,640 / 8,640 replicates.
 
 ## 2. Tried and rejected: Toeplitz design via AR(1) recursion
 Sigma_ij = mu^|i-j| is an AR(1) covariance, so X can be built column by column with `scipy.signal.lfilter` in O(np) instead of the O(np^2) product `Z @ L.T`, using the same draws Z (X agrees to 1e-15). It is slower at the study's sizes (n = 5636, mu = 0.5):
