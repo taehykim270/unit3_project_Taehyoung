@@ -86,4 +86,17 @@ Raw times: `results/profiling/complexity_baseline.csv`.
 
 
 ## 4. Numerical stability
-(Step 1.5)
+`python -m src.stability` reruns every condition (10 reps each) with all warnings recorded, and also computes cond(X_S) and the closed-form PDW verdict.  
+Output: `results/profiling/stability_baseline.txt`.
+
+| Issue | Frequency | Conditions |
+|---|---|---|
+| Warnings (any category) | 0 | - |
+| Lasso not converged | 0 (also 0 / 172,800 in the full run) | - |
+| $n \leq k$ ($X_S^T X_S$ singular, counted as failure) | 2,400 / 172,800 in the full run | 12 conditions with the smallest theta |
+| Ill-conditioned $X_S$ | max cond($X_S$) = 3,535 for Gaussian designs | linear regime, theta = 0.1 (n = 104, k = 103) |
+| Exactly singular $X_S$ (cond = inf or ~1e16) | closed-form solve raised `LinAlgError` in 29 / 2,160 sparse-design reps | sparse design, small n: a column of $X_S$ is all zeros with probability 0.9^n |
+| Verdict within 1e-6 of a threshold | 0 | - |
+| Closed-form vs restricted-Lasso PDW disagreement | 0 | wherever both ran |
+
+cond(X_S) is small (median about 2) except as n approaches k. The closed form solves with X_S^T X_S, whose condition number is cond(X_S)^2 (up to 1.2e7 here), so the optimized code should avoid an explicit inverse and must handle singular X_S (sparse design). scikit-learn's coordinate descent hides the singular cases: it sets the coefficient to zero without a warning.

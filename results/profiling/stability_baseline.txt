@@ -1,0 +1,33 @@
+
+Per design and regime:
+                             reps  n_le_k  not_converged  with_warnings  exceptions  near_ties  disagree  median_cond  max_cond
+design          regime                                                                                                        
+identity        fractional   720      10              0              0           0          0         0          1.7      28.7
+                linear       720      10              0              0           0          0         0          1.8    3534.9
+                sublinear    720      10              0              0           0          0         0          1.7      31.8
+sparse          fractional   720      10              0              0          10          0         0          1.8       inf
+                linear       720      10              0              0           0          0         0          1.8     763.7
+                sublinear    720      10              0              0          19          0         0          1.8       inf
+toeplitz        fractional   720      10              0              0           0          0         0          1.7      54.6
+                linear       720      10              0              0           0          0         0          1.8     828.2
+                sublinear    720      10              0              0           0          0         0          1.7      33.9
+toeplitz_strong fractional   720      10              0              0           0          0         0          2.3      34.7
+                linear       720      10              0              0           0          0         0          3.1     773.7
+                sublinear    720      10              0              0           0          0         0          2.2      56.7
+
+Ten worst-conditioned conditions (max cond(X_S) over reps):
+ design    regime      p    theta  n    k  
+sparse    sublinear   128  0.3    40   14              inf
+                           0.2    27   14              inf
+                      256  0.2    51   23              inf
+          fractional  256  0.1    29   26              inf
+                      128  0.2    31   16              inf
+          sublinear   256  0.1    26   23     2.475114e+17
+                      128  0.5    67   14     2.875458e+16
+                      512  0.1    49   39     1.034282e+16
+identity  linear      256  0.1    104  103    3.534861e+03
+toeplitz  linear      256  0.1    104  103    8.281523e+02
+
+Distinct warning messages: <StringArray>
+[]
+Length: 0, dtype: str
