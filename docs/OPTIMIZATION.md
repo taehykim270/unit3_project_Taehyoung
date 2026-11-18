@@ -48,3 +48,8 @@ The product runs in Apple's Accelerate BLAS, while the recursion is sequential, 
 
 - The M5 has 4 performance and 6 efficiency cores. With 10 reps, each worker's start-up cost (new process, imports) dominates and more than 4 workers do not help; with 50 reps the efficiency cores pay off (10 workers: 2.98x vs 4 workers: 2.33x). `make parallel` uses all cores.
 - Even 4 workers reach only 2.33x: all workers generate large random matrices at the same time and share the memory bandwidth.
+
+## Differences from the Unit 2 results
+Full study rerun with the optimized code (`make parallel`, 172,800 replicates) and compared with the Unit 2 tables:
+- **Success rates are identical in all 864 conditions**; thresholds, curve collapse and the paper comparison agree up to rounding (<= 2e-16). Figures 1-5 (success curves) are unchanged.
+- **PDW diagnostics differ on failed replicates** (`dual_feasible_rate` by up to 0.04, `max_abs_z` quantiles, numbers of violations and sign errors). When recovery fails, the baseline's restricted Lasso and the closed form (which assumes the true signs) produce different beta_check_S, so they certify the failure at different PDW steps. Both verdicts are correct by Lemma 3, and on successful replicates the diagnostics agree (max_abs_z within 1e-8, `tests/test_regression.py`). This changes `fig1_pdw_diagnostics` only. Singular X_S (n <= k, or rank-deficient X_S in the sparse design) now gives NaN diagnostics.
