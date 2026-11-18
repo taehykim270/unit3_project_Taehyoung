@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import Lasso
+from scipy.linalg import cho_factor, cho_solve
 
 
 # ===========================================================================
@@ -154,9 +155,72 @@ class PDWClosedForm(PrimalDualWitness):
         return np.linalg.solve(X_S.T @ X_S, X_S.T @ y - n * lam * z_S), True   # no iterative solver
 
 
+class PDWFast(SupportRecoveryCheck):
+    """Optimized PDW (Unit 3): Step 1 in closed form, solved by Cholesky, with a singularity guard.
+
+    Same verdict as PDWRestrictedLasso (Lemma 3; see PDWClosedForm) without an iterative solver.
+    X_S^T X_S = L L^T is factorized once; if it is singular or numerically singular, X_S is
+    rank-deficient, the restricted Lasso has no unique solution and the PDW fails. The baseline
+    reports failure in these cases too (docs/BASELINE.md, Section 4).
+    """
+
+    name = "pdw_fast"
+
+    def __init__(self, rcond_tol=1e-12):
+        self.rcond_tol = rcond_tol      # declare singular if cond(X_S^T X_S) is certainly above 1 / rcond_tol
+
+    def check(self, data, lam):
+        X, y, beta, support = data["X"], data["y"], data["beta"], data["support"]
+        n, p = X.shape
+        k = len(support)
+        off_support = np.setdiff1d(np.arange(p), support)
+        if n <= k:
+            return _failed_check()
+
+        X_S = X[:, support]
+        z_S = np.sign(beta[support])
+
+        # Step 1-2: (X_S^T X_S) b = X_S^T y - n lam z_S, solved with the Cholesky factor L
+        try:
+            chol = cho_factor(X_S.T @ X_S)
+        except np.linalg.LinAlgError:                    # not positive definite: X_S rank-deficient
+            return _failed_check()
+        diag_L = np.abs(np.diag(chol[0]))
+        if (diag_L.min() / diag_L.max()) ** 2 < self.rcond_tol:   # nearly singular (quick test using L's diagonal)
+            return _failed_check()
+        beta_check_S = cho_solve(chol, X_S.T @ y - n * lam * z_S)
+
+        # Step 3: dual feasibility on S^c
+        residual = y - X_S @ beta_check_S
+        z_Sc = X[:, off_support].T @ residual / (n * lam)
+        max_abs_z = float(np.max(np.abs(z_Sc))) if len(off_support) else 0.0
+        dual_feasible = max_abs_z < 1.0
+
+        # Step 4: sign consistency (exact linear solve, so the cutoff is 0)
+        signed_check = z_S * beta_check_S
+        sign_margin = float(np.min(signed_check))
+        sign_consistent = sign_margin > 0.0
+
+        return {"success": bool(dual_feasible and sign_consistent),
+                "dual_feasible": bool(dual_feasible),
+                "sign_consistent": bool(sign_consistent),
+                "max_abs_z": max_abs_z,
+                "sign_margin": sign_margin,
+                "n_violations": int(np.sum(np.abs(z_Sc) >= 1.0)),
+                "n_sign_errors": int(np.sum(signed_check <= 0.0)),
+                "solver_converged": True}
+
+
 # ===========================================================================
 # SUPPORTING: numerical Lasso solver, full-Lasso cross-check, registry
 # ===========================================================================
+
+def _failed_check():
+    """PDW verdict when X_S^T X_S is singular (n <= k or rank-deficient X_S): failure, diagnostics undefined."""
+    return {"success": False, "dual_feasible": False, "sign_consistent": False,
+            "max_abs_z": np.nan, "sign_margin": np.nan,
+            "n_violations": np.nan, "n_sign_errors": np.nan, "solver_converged": np.nan}
+
 
 def _lasso_fit_status(X, y, lam, tol=1e-10, max_iter=100_000):
     """Coordinate-descent Lasso; returns (coef, converged).
@@ -213,4 +277,4 @@ class FullLasso(SupportRecoveryCheck):
 
 
 # Registry used by simulation.py to pick a check by name from CONFIG
-CHECKS = {cls.name: cls for cls in (PDWRestrictedLasso, PDWClosedForm, FullLasso)}
+CHECKS = {cls.name: cls for cls in (PDWRestrictedLasso, PDWClosedForm, PDWFast, FullLasso)}
