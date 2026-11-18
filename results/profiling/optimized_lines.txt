@@ -1,0 +1,153 @@
+Timer unit: 0.001 s
+
+Total time: 0 s
+File: /Users/taehykim/Desktop/coursework/26 fall/607/Projects/unit3_project_Taehyoung/src/methods.py
+Function: PrimalDualWitness.check at line 82
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    82                                               def check(self, data, lam):
+    83                                                   X, y, beta, support = data["X"], data["y"], data["beta"], data["support"]
+    84                                                   n, p = X.shape
+    85                                                   k = len(support)
+    86                                                   off_support = np.setdiff1d(np.arange(p), support)
+    87                                           
+    88                                                   # X_S^T X_S is singular when n < k; n <= k counts as failure (see ADEMP 2.5)
+    89                                                   if n <= k:
+    90                                                       return {"success": False, "dual_feasible": False, "sign_consistent": False,
+    91                                                               "max_abs_z": np.nan, "sign_margin": np.nan,
+    92                                                               "n_violations": np.nan, "n_sign_errors": np.nan, "solver_converged": np.nan}
+    93                                           
+    94                                                   X_S = X[:, support]
+    95                                                   beta_check_S, converged = self.restricted_solution(X_S, y, beta[support], lam)
+    96                                           
+    97                                                   # Step 3: solve the zero-subgradient condition (8) for z on S^c (eq. 10 / 52):
+    98                                                   #   z_{S^c} = X_{S^c}^T (y - X_S beta_check_S) / (n lam)
+    99                                                   residual = y - X_S @ beta_check_S
+   100                                                   z_Sc = X[:, off_support].T @ residual / (n * lam)
+   101                                                   max_abs_z = float(np.max(np.abs(z_Sc))) if len(off_support) else 0.0
+   102                                                   dual_feasible = max_abs_z < 1.0  # strict dual feasibility -> uniqueness
+   103                                           
+   104                                                   # Step 4: sign consistency, sign(beta_check_S) == sign(beta*_S) (eq. 13)
+   105                                                   signed_check = np.sign(beta[support]) * beta_check_S
+   106                                                   sign_margin = float(np.min(signed_check))
+   107                                                   sign_consistent = sign_margin > self.sign_tol
+   108                                           
+   109                                                   return {"success": bool(dual_feasible and sign_consistent),
+   110                                                           "dual_feasible": bool(dual_feasible),
+   111                                                           "sign_consistent": bool(sign_consistent),
+   112                                                           "max_abs_z": max_abs_z,
+   113                                                           "sign_margin": sign_margin,
+   114                                                           "n_violations": int(np.sum(np.abs(z_Sc) >= 1.0)),
+   115                                                           "n_sign_errors": int(np.sum(signed_check <= self.sign_tol)),
+   116                                                           "solver_converged": bool(converged)}
+
+Total time: 12.2004 s
+File: /Users/taehykim/Desktop/coursework/26 fall/607/Projects/unit3_project_Taehyoung/src/dgps.py
+Function: generate_replicate at line 145
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   145                                           def generate_replicate(n, p, k, sigma, beta_min, rng, design="identity", toeplitz_mu=None,
+   146                                                                  sparse_q=None, toeplitz_method="cholesky", ):
+   147                                               """Draw one data set (X, y, beta*, w) for a single simulation replicate.
+   148                                           
+   149                                               A new X, support, sign pattern and noise vector are drawn every call,
+   150                                               matching the paper.
+   151                                               Draw order is fixed (X, beta*, w) so a given rng state always gives the same data.
+   152                                               """
+   153      8640          1.7      0.0      0.0      if design == "identity":
+   154      2160       2187.8      1.0     17.9          X = generate_gaussian_design(n, p, rng)
+   155      6480          1.1      0.0      0.0      elif design.startswith("toeplitz"):   # "toeplitz", "toeplitz_strong": differ only in mu
+   156      4320          0.5      0.0      0.0          if toeplitz_mu is None:
+   157                                                       raise ValueError("toeplitz design requires toeplitz_mu")
+   158     12960          1.9      0.0      0.0          generate = {"cholesky": generate_toeplitz_design,                   # baseline: Z @ L.T, O(np^2)
+   159      8640          0.9      0.0      0.0                      "ar1": generate_toeplitz_design_ar1}[toeplitz_method]   # optimized: O(np)
+   160      4320       6721.7      1.6     55.1          X = generate(n, p, toeplitz_mu, rng)
+   161      2160          0.2      0.0      0.0      elif design == "sparse":
+   162      2160          0.3      0.0      0.0          if sparse_q is None:
+   163                                                       raise ValueError("sparse design requires sparse_q")
+   164      2160       2859.6      1.3     23.4          X = generate_sparse_design(n, p, sparse_q, rng)
+   165                                               else:
+   166                                                   raise ValueError(f"unknown design: {design}")
+   167                                           
+   168      8640        193.6      0.0      1.6      beta, support = generate_beta(p, k, beta_min, rng)
+   169      8640         34.8      0.0      0.3      w = _generate_noise(n, sigma, rng)
+   170      8640        193.7      0.0      1.6      y = X @ beta + w
+   171                                           
+   172      8640          2.6      0.0      0.0      return {"X": X, "y": y, "beta": beta, "support": support, "w": w}
+
+Total time: 6.71883 s
+File: /Users/taehykim/Desktop/coursework/26 fall/607/Projects/unit3_project_Taehyoung/src/dgps.py
+Function: generate_toeplitz_design at line 77
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    77                                           def generate_toeplitz_design(n, p, mu, rng):
+    78                                               """X in R^{n x p} with i.i.d. rows N(0, Sigma), Sigma Toeplitz: X = Z L^T, Z standard Gaussian."""
+    79      4320       4285.8      1.0     63.8      Z = rng.standard_normal((n, p))
+    80      4320       2433.0      0.6     36.2      return Z @ toeplitz_cholesky(p, mu).T
+
+Total time: 2.85819 s
+File: /Users/taehykim/Desktop/coursework/26 fall/607/Projects/unit3_project_Taehyoung/src/dgps.py
+Function: generate_sparse_design at line 99
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    99                                           def generate_sparse_design(n, p, q, rng):
+   100                                               """X in R^{n x p} with i.i.d. entries +1/sqrt(q), -1/sqrt(q) w.p. q/2 each, and 0 otherwise.
+   101                                           
+   102                                               Entries have mean 0 and variance 1, so Sigma = I as in the identity design, but X is
+   103                                               non-Gaussian and mostly zeros (cf. the paper's follow-up on sparse measurement matrices, ref. [36]).
+   104                                               """
+   105      2160       1961.4      0.9     68.6      u = rng.random((n, p))
+   106      2160        896.8      0.4     31.4      return (np.where(u < q / 2, 1.0, 0.0) - np.where((u >= q / 2) & (u < q), 1.0, 0.0)) / np.sqrt(q)
+
+Total time: 2.64468 s
+File: /Users/taehykim/Desktop/coursework/26 fall/607/Projects/unit3_project_Taehyoung/src/methods.py
+Function: PDWFast.check at line 172
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   172                                               def check(self, data, lam):
+   173      8640          2.4      0.0      0.1          X, y, beta, support = data["X"], data["y"], data["beta"], data["support"]
+   174      8640          1.6      0.0      0.1          n, p = X.shape
+   175      8640          2.0      0.0      0.1          k = len(support)
+   176      8640         17.4      0.0      0.7          off_support = np.ones(p, dtype=bool)
+   177      8640          3.5      0.0      0.1          off_support[support] = False
+   178      8640          1.3      0.0      0.0          if n <= k:
+   179       120          0.1      0.0      0.0              return _failed_check()
+   180                                           
+   181      8520       1232.2      0.1     46.6          X_S = X[:, support]
+   182      8520          7.5      0.0      0.3          z_S = np.sign(beta[support])
+   183                                           
+   184                                                   # Step 1-2: (X_S^T X_S) b = X_S^T y - n lam z_S, solved with the Cholesky factor L
+   185      8520          1.1      0.0      0.0          try:
+   186      8520        692.4      0.1     26.2              chol = cho_factor(X_S.T @ X_S)
+   187        28          0.0      0.0      0.0          except np.linalg.LinAlgError:                    # not positive definite: X_S rank-deficient
+   188        28          0.0      0.0      0.0              return _failed_check()
+   189      8492         26.9      0.0      1.0          diag_L = np.abs(np.diag(chol[0]))
+   190      8492         15.4      0.0      0.6          if (diag_L.min() / diag_L.max()) ** 2 < self.rcond_tol:   # nearly singular (quick test using L's diagonal)
+   191         3          0.0      0.0      0.0              return _failed_check()
+   192      8489        286.9      0.0     10.8          beta_check_S = cho_solve(chol, X_S.T @ y - n * lam * z_S)
+   193                                           
+   194                                                   # Step 3: dual feasibility on S^c
+   195      8489         26.4      0.0      1.0          residual = y - X_S @ beta_check_S
+   196      8489        170.8      0.0      6.5          z_Sc = (X.T @ residual)[off_support] / (n * lam)
+   197      8489         35.0      0.0      1.3          max_abs_z = float(np.max(np.abs(z_Sc))) if z_Sc.size else 0.0
+   198      8489          1.3      0.0      0.0          dual_feasible = max_abs_z < 1.0
+   199                                           
+   200                                                   # Step 4: sign consistency (exact linear solve, so the cutoff is 0)
+   201      8489          3.6      0.0      0.1          signed_check = z_S * beta_check_S
+   202      8489         28.6      0.0      1.1          sign_margin = float(np.min(signed_check))
+   203      8489          1.1      0.0      0.0          sign_consistent = sign_margin > 0.0
+   204                                           
+   205     16978          4.0      0.0      0.2          return {"success": bool(dual_feasible and sign_consistent),
+   206      8489          1.1      0.0      0.0                  "dual_feasible": bool(dual_feasible),
+   207      8489          1.1      0.0      0.0                  "sign_consistent": bool(sign_consistent),
+   208      8489          1.1      0.0      0.0                  "max_abs_z": max_abs_z,
+   209      8489          1.1      0.0      0.0                  "sign_margin": sign_margin,
+   210      8489         43.1      0.0      1.6                  "n_violations": int(np.sum(np.abs(z_Sc) >= 1.0)),
+   211      8489         34.5      0.0      1.3                  "n_sign_errors": int(np.sum(signed_check <= 0.0)),
+   212      8489          1.1      0.0      0.0                  "solver_converged": True}
+

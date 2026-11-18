@@ -14,6 +14,13 @@ The full simulation plan is in [ADEMP.md](ADEMP.md): the aims, how data are gene
 the target probability, the methods, and how performance is measured. The paper itself
 is not included in this repository; see the DOI above.
 
+## Unit 3: performance
+
+The simulation study was profiled and optimized: the full study now takes **93 s instead of 446 s
+(4.8x)** with identical success rates. Baseline measurements (profiling, complexity, numerical
+stability) are in [docs/BASELINE.md](docs/BASELINE.md); the optimizations, their impact and trade-offs
+are in [docs/OPTIMIZATION.md](docs/OPTIMIZATION.md). `--impl baseline` runs the original Unit 2 code.
+
 ## Key findings
 
 The main patterns are reproduced: plotting success against θ brings the curves for different
@@ -32,7 +39,7 @@ make reproduce
 
 This command creates a virtual environment in `venv/`, installs the packages listed in
 `requirements.txt`, removes generated files, runs the tests, and rebuilds the simulations,
-summary tables and figures. It takes about 9 minutes. All `make` targets use
+summary tables and figures. It takes about 3 minutes. All `make` targets use
 `venv/bin/python` automatically, so there is no need to activate the environment.
 
 ## Running individual steps
@@ -47,13 +54,21 @@ summary tables and figures. It takes about 9 minutes. All `make` targets use
 | `make all` | `simulate`, then `analyze`, then `figures` (each step only reruns when its inputs changed) |
 | `make test` | run the test suite |
 | `make clean` | remove all generated files, so that `make all` rebuilds everything from scratch |
+| `make parallel` | rerun the full study with the optimized code on all cores |
+| `make profile` | cProfile and line profiles, baseline and optimized, into `results/profiling/` |
+| `make complexity` | time one replicate vs n and vs p, baseline and optimized |
+| `make benchmark` | total time baseline vs optimized, and speedup vs number of workers |
+| `make stability-check` | warnings, convergence, conditioning and singular X_S, baseline and optimized |
+| `make perf-figures` | the two performance figures |
 
-**Estimated runtime** (laptop, single core):
+
+**Estimated runtime** (Apple M5 laptop):
 
 - `make setup`: about 1 minute (downloads packages)
-- `make test`: about 5 seconds
-- `make reproduce`: about 9 minutes in total
-- `make all` from scratch: about 8 minutes. Most of this is simulation time (451 s for 172,800 replicates); summaries and figures take a few seconds.
+- `make test`: about 10 seconds
+- `make all` from scratch: about 2 minutes (simulation 93 s on all cores; the Unit 2 code took 446 s on one core)
+- `make reproduce`: about 3 minutes in total
+- `make profile`, `make stability-check`, `make benchmark`: about 2-3 minutes each; `make complexity`: under a minute
 
 The simulation can also be run directly, for example
 `venv/bin/python -m src.simulation --n-reps 10` for a quick test run, or
@@ -77,6 +92,9 @@ The simulation can also be run directly, for example
 | `results/figures/fig3_toeplitz_by_regime` | Fig. 3: Toeplitz design, with the theoretical thresholds |
 | `results/figures/fig4_toeplitz_strong_by_regime` | extension (not in the paper): Toeplitz design with μ = 0.5 |
 | `results/figures/fig5_sparse_by_regime` | extension (not in the paper): sparse random design, q = 0.1 |
+| `results/figures/perf_complexity` | time of one replicate vs n and p, baseline vs optimized (log-log) |
+| `results/figures/perf_speedup` | total time baseline vs optimized, and parallel speedup |
+| `results/profiling/` | profiler output, complexity timings, stability check and benchmark results |
 
 ## Repository structure
 
@@ -86,7 +104,13 @@ The simulation can also be run directly, for example
 │   ├── methods.py       # support-recovery checks: primal-dual witness (two versions), full Lasso
 │   ├── metrics.py       # performance measures and theoretical thresholds
 │   ├── simulation.py    # configuration (CONFIG), seeding and the simulation loop
-│   └── figures.py       # all figures
+│   ├── figures.py       # all figures
+│   ├── profile_sim.py   # cProfile / line_profiler of the simulation
+│   ├── complexity.py    # runtime vs n and p
+│   ├── stability.py     # numerical stability check
+│   ├── benchmark.py     # baseline vs optimized timing, speedup vs workers
+│   └── perf_figures.py  # performance figures
+├── docs/                # BASELINE.md, OPTIMIZATION.md
 ├── tests/               # DGP verification, method correctness, output validation, reproducibility
 ├── results/             # summary tables and figures (raw results are git-ignored)
 ├── data/
