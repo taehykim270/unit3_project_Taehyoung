@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 from src.dgps import generate_replicate
 from src.methods import PDWClosedForm
-from src.simulation import CONFIG, build_conditions, make_check, replicate_rng
+from src.simulation import CONFIG, IMPLS, build_conditions, make_check, replicate_rng
 
 TIE_TOL = 1e-6   # within this of a threshold, the verdict could flip under rounding / solver error
 
@@ -35,7 +35,7 @@ def check_replicate(cond, rep, config, check, closed_form):
         data = generate_replicate(cond["n"], cond["p"], cond["k"], config["sigma"],
                                   config["beta_min"], rng, design=cond["design"],
                                   toeplitz_mu=config["toeplitz_mu"].get(cond["design"]),
-                                  sparse_q=config["sparse_q"])
+                                  sparse_q=config["sparse_q"], toeplitz_method=config["toeplitz_method"])
         result = check.check(data, cond["lam"])
         try:
             closed = closed_form.check(data, cond["lam"])
@@ -75,13 +75,15 @@ def summarize(df):
 def parse_args():
     parser = argparse.ArgumentParser(description="Check numerical stability across all conditions.")
     parser.add_argument("--n-reps", type=int, default=10, help="replicates per condition")
-    parser.add_argument("--out", default="results/profiling/stability_baseline.csv")
+    parser.add_argument("--impl", choices=sorted(IMPLS), default="baseline", help="code version to time")
+    parser.add_argument("--out", default=None, help="default: results/profiling/stability_<impl>.csv")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     config = copy.deepcopy(CONFIG)
+    config.update(IMPLS[args.impl])
     check, closed_form = make_check(config), PDWClosedForm()
 
     rows = [check_replicate(cond, rep, config, check, closed_form)
@@ -89,7 +91,7 @@ def main():
             for rep in range(args.n_reps)]
     df = pd.DataFrame(rows)
 
-    out = Path(args.out)
+    out = Path(args.out or f"results/profiling/stability_{args.impl}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out, index=False)
 

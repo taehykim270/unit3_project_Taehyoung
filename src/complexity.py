@@ -20,7 +20,7 @@ import pandas as pd
 
 from src.dgps import generate_replicate, sample_size, sparsity_k
 from src.methods import regularization_lambda
-from src.simulation import CONFIG, make_check
+from src.simulation import CONFIG, IMPLS, make_check
 
 DESIGNS = ["identity", "toeplitz"]
 REGIME = "linear"
@@ -36,7 +36,8 @@ def time_replicate(n, p, k, design, config, check, rng, n_repeat):
         t0 = time.perf_counter()
         data = generate_replicate(n, p, k, config["sigma"], config["beta_min"], rng, design=design,
                                   toeplitz_mu=config["toeplitz_mu"].get(design),
-                                  sparse_q=config["sparse_q"])
+                                  sparse_q=config["sparse_q"],
+                                  toeplitz_method=config["toeplitz_method"])
         t1 = time.perf_counter()
         check.check(data, lamda)
         t2 = time.perf_counter()
@@ -80,18 +81,20 @@ def fit_slopes(df):
 def parse_args():
     parser = argparse.ArgumentParser(description="Time one replicate as a function of n and p.")
     parser.add_argument("--n-repeat", type=int, default=5, help="replicates timed per point")
-    parser.add_argument("--out", default="results/profiling/complexity_baseline.csv")
+    parser.add_argument("--impl", choices=sorted(IMPLS), default="baseline", help="code version to time")
+    parser.add_argument("--out", default=None, help="default: results/profiling/complexity_<impl>.csv")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     config = copy.deepcopy(CONFIG)
+    config.update(IMPLS[args.impl])
 
     df = run_grids(config, args.n_repeat)
     slopes = fit_slopes(df)
 
-    out = Path(args.out)
+    out = Path(args.out or f"results/profiling/complexity_{args.impl}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out, index=False)
     slopes.to_csv(out.with_name(out.stem + "_slopes.csv"), index=False)

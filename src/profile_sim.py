@@ -13,15 +13,15 @@ import cProfile
 import pstats
 from pathlib import Path
 
-from src.simulation import CONFIG, run_simulation
+from src.simulation import CONFIG, IMPLS, run_simulation
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Profile the simulation")
     parser.add_argument("--n-reps", type=int, default=10, help="replicates per condition")
     parser.add_argument("--top", type=int, default=20, help="rows to print in each table")
-    parser.add_argument("--out", default="results/profiling/baseline.prof",
-                        help="where to save the raw profile")
+    parser.add_argument("--impl", choices=sorted(IMPLS), default="baseline", help="code version to profile")
+    parser.add_argument("--out", default=None, help="raw profile file (default: results/profiling/<impl>.prof)")
     parser.add_argument("--lines", action="store_true",
                         help="line-by-line profile of the hot functions instead of cProfile")   # helps are for my own understanding
     return parser.parse_args()
@@ -37,6 +37,7 @@ def line_profile(config):
     profiler.add_function(dgps.generate_replicate)
     profiler.add_function(dgps.generate_toeplitz_design)
     profiler.add_function(dgps.generate_sparse_design)
+    profiler.add_function(methods.PDWFast.check)
 
     profiler.runcall(run_simulation, config)
     profiler.print_stats(output_unit=1e-3)       # Report in milliseconds
@@ -46,6 +47,8 @@ def main():
     args = parse_args()
     config = copy.deepcopy(CONFIG)
     config["n_reps"] = args.n_reps
+    config.update(IMPLS[args.impl])
+    out = args.out or f"results/profiling/{args.impl}.prof"
 
     if args.lines:
         line_profile(config)
@@ -54,8 +57,8 @@ def main():
     with cProfile.Profile() as profiler:
         run_simulation(config)
 
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    profiler.dump_stats(args.out)
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
+    profiler.dump_stats(out)
 
     stats = pstats.Stats(profiler).strip_dirs()
     print("=" * 30, "sorted by cumulative time", "=" * 30)

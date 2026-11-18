@@ -1,0 +1,58 @@
+============================== sorted by cumulative time ==============================
+         1472255 function calls (1472153 primitive calls) in 14.600 seconds
+
+   Ordered by: cumulative time
+   List reduced from 384 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      3/2    0.000    0.000   14.598    7.299 threading.py:651(wait)
+      3/2    0.000    0.000   14.596    7.298 threading.py:337(wait)
+     12/7    0.001    0.000   14.596    2.085 {method 'acquire' of '_thread.lock' objects}
+      2/1    0.000    0.000   14.595   14.595 simulation.py:157(run_simulation)
+      865    0.001    0.000   14.585    0.017 std.py:1166(__iter__)
+      865    0.001    0.000   14.579    0.017 simulation.py:164(<genexpr>)
+      864    0.027    0.000   14.575    0.017 simulation.py:132(run_condition)
+     8640    0.225    0.000   12.006    0.001 dgps.py:145(generate_replicate)
+     4320    6.636    0.002    6.642    0.002 dgps.py:77(generate_toeplitz_design)
+     2160    2.796    0.001    2.796    0.001 dgps.py:99(generate_sparse_design)
+     8640    1.985    0.000    2.431    0.000 methods.py:172(check)
+     2160    2.163    0.001    2.163    0.001 dgps.py:56(generate_gaussian_design)
+     8520    0.008    0.000    0.179    0.000 _decomp_cholesky.py:125(cho_factor)
+     8489    0.004    0.000    0.168    0.000 _decomp_cholesky.py:222(cho_solve)
+     8489    0.032    0.000    0.164    0.000 _util.py:1102(wrapper)
+     8640    0.061    0.000    0.149    0.000 dgps.py:113(generate_beta)
+     8520    0.015    0.000    0.148    0.000 _decomp_cholesky.py:26(_cholesky)
+     8640    0.061    0.000    0.102    0.000 simulation.py:97(replicate_rng)
+     8489    0.061    0.000    0.098    0.000 _decomp_cholesky.py:271(_cho_solve)
+    59876    0.036    0.000    0.080    0.000 fromnumeric.py:66(_wrapreduction)
+
+
+============================== sorted by own time (tottime) ==============================
+         1472255 function calls (1472153 primitive calls) in 14.600 seconds
+
+   Ordered by: internal time
+   List reduced from 384 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     4320    6.636    0.002    6.642    0.002 dgps.py:77(generate_toeplitz_design)
+     2160    2.796    0.001    2.796    0.001 dgps.py:99(generate_sparse_design)
+     2160    2.163    0.001    2.163    0.001 dgps.py:56(generate_gaussian_design)
+     8640    1.985    0.000    2.431    0.000 methods.py:172(check)
+     8640    0.225    0.000   12.006    0.001 dgps.py:145(generate_replicate)
+     8520    0.064    0.000    0.064    0.000 {built-in method scipy.linalg._batched_linalg._cholesky}
+     8489    0.061    0.000    0.098    0.000 _decomp_cholesky.py:271(_cho_solve)
+     8640    0.061    0.000    0.149    0.000 dgps.py:113(generate_beta)
+     8640    0.061    0.000    0.102    0.000 simulation.py:97(replicate_rng)
+   102358    0.048    0.000    0.048    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+    59876    0.036    0.000    0.080    0.000 fromnumeric.py:66(_wrapreduction)
+     8489    0.032    0.000    0.164    0.000 _util.py:1102(wrapper)
+     8640    0.032    0.000    0.032    0.000 dgps.py:125(_generate_noise)
+    25498    0.029    0.000    0.052    0.000 _function_base_impl.py:615(asarray_chkfinite)
+     8640    0.027    0.000    0.032    0.000 _ufunc_config.py:496(inner)
+      864    0.027    0.000   14.575    0.017 simulation.py:132(run_condition)
+    34114    0.016    0.000    0.021    0.000 {built-in method numpy.array}
+     8492    0.015    0.000    0.023    0.000 _shape_base_impl.py:1157(tile)
+     8520    0.015    0.000    0.148    0.000 _decomp_cholesky.py:26(_cholesky)
+     8521    0.009    0.000    0.012    0.000 blas.py:289(find_best_blas_type)
+
+
