@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from helpers import small_config
-from src.dgps import generate_replicate, generate_toeplitz_design, generate_toeplitz_design_ar1
+from src.dgps import generate_replicate, sample_size, generate_toeplitz_design, generate_toeplitz_design_ar1
 from src.methods import PDWFast, PDWRestrictedLasso, regularization_lambda
 from src.simulation import IMPLS, run_simulation
 
@@ -36,12 +36,25 @@ def test_success_rates_match(baseline_and_optimized):
                                    opt.groupby(keys)["success"].mean())
 
 
-def test_max_abs_z_matches_where_both_succeed(baseline_and_optimized):
-    """Where the PDW succeeds, max |z_j| agrees up to the baseline solver's tolerance (1e-10)."""
+def test_all_outputs_match_baseline(baseline_and_optimized):
+    """Every output column matches the baseline on every replicate (numbers up to the solver tolerance)."""
     base, opt = baseline_and_optimized
-    ok = base["success"] & opt["success"]
-    assert ok.sum() > 50
-    np.testing.assert_allclose(opt.loc[ok, "max_abs_z"], base.loc[ok, "max_abs_z"], atol=1e-8)
+    for col in ["dual_feasible", "sign_consistent", "n_violations", "n_sign_errors", "solver_converged"]:
+        pd.testing.assert_series_equal(base[col], opt[col])
+    for col in ["max_abs_z", "sign_margin"]:
+        np.testing.assert_allclose(opt[col], base[col], atol=1e-8)    # NaNs must be in the same places
+
+
+def test_closed_form_used_when_signs_are_correct(monkeypatch):
+    """Far above the threshold the closed form is used: the sklearn fallback is never called."""
+    p, k = 128, 16
+    n = sample_size(2.4, p, k)
+    lam = regularization_lambda(n, p, k, 0.5)
+    fast = PDWFast()
+    monkeypatch.setattr(fast.fallback, "check", lambda data, lam: pytest.fail("fallback was called"))
+    rng = np.random.default_rng(7)
+    for _ in range(10):
+        assert fast.check(generate_replicate(n, p, k, 0.5, 0.5, rng), lam)["success"]
 
 
 def test_parallel_identical_to_serial():
@@ -60,7 +73,7 @@ def test_ar1_toeplitz_equals_cholesky(mu):
 
 @pytest.mark.parametrize("kind", ["zero_column", "duplicate_column"])
 def test_singular_X_S_fails_like_baseline(kind):
-    """Rank-deficient X_S: both versions report failure, and the optimized one raises no error."""
+    """Rank-deficient X_S: the optimized check falls back to the baseline and returns the same output."""
     n, p, k = 60, 128, 16
     d = generate_replicate(n, p, k, 0.5, 0.5, np.random.default_rng(5))
     S = d["support"]
@@ -70,16 +83,16 @@ def test_singular_X_S_fails_like_baseline(kind):
         d["X"][:, S[1]] = d["X"][:, S[0]]
     d["y"] = d["X"] @ d["beta"] + d["w"]
     lam = regularization_lambda(n, p, k, 0.5)
-    assert PDWRestrictedLasso().check(d, lam)["success"] is False
-    assert PDWFast().check(d, lam)["success"] is False
+    base, fast = PDWRestrictedLasso().check(d, lam), PDWFast().check(d, lam)
+    assert base["success"] is False
+    assert pd.Series(fast).equals(pd.Series(base))            # equals() treats NaN == NaN
 
 
 def test_n_le_k_same_output():
-    """n <= k: both versions return failure with undefined (NaN) diagnostics."""
+    """n <= k: both versions return the same failure output with undefined (NaN) diagnostics."""
     n, p, k = 16, 128, 16
     d = generate_replicate(n, p, k, 0.5, 0.5, np.random.default_rng(6))
     lam = regularization_lambda(n, p, k, 0.5)
     base, fast = PDWRestrictedLasso().check(d, lam), PDWFast().check(d, lam)
-    assert base.keys() == fast.keys()
-    assert base["success"] is False and fast["success"] is False
-    assert np.isnan(base["max_abs_z"]) and np.isnan(fast["max_abs_z"])
+    assert base["success"] is False and np.isnan(base["max_abs_z"])
+    assert pd.Series(fast).equals(pd.Series(base))

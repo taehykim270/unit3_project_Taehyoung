@@ -62,7 +62,7 @@ CONFIG = {
         "pdw_restricted_lasso": {"zero_tol": 1e-8, "solver_tol": 1e-10},
         "pdw_closed_form": {},           # exact linear solve: no tolerances (sign_tol = 0)
         "full_lasso": {"zero_tol": 1e-8, "solver_tol": 1e-10},
-        "pdw_fast": {"rcond_tol": 1e-12},
+        "pdw_fast": {"rcond_tol": 1e-12, "zero_tol": 1e-8, "solver_tol": 1e-10},
     },
     "crosscheck_reps": 0,                # first m reps per condition also solved by FullLasso
                                          # (0: PDW is exact by Lemmas 2-3; the full-Lasso check lives in tests/)
