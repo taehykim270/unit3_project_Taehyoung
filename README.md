@@ -20,6 +20,8 @@ The simulation study was profiled and optimized: the full study now takes **100 
 (4.5x)** with the same results. Baseline measurements (profiling, complexity, numerical
 stability) are in [docs/BASELINE.md](docs/BASELINE.md); the optimizations, their impact and trade-offs
 are in [docs/OPTIMIZATION.md](docs/OPTIMIZATION.md). `--impl baseline` runs the original Unit 2 code.
+An optional extension, a Rao-Blackwellized estimate that needs about 60x fewer replicates for the
+identity design, is in [docs/EXTENSIONS.md](docs/EXTENSIONS.md).
 
 ## Key findings
 
@@ -60,6 +62,7 @@ summary tables and figures. It takes about 3 minutes. All `make` targets use
 | `make benchmark` | total time baseline vs optimized, and speedup vs number of workers |
 | `make stability-check` | warnings, convergence, conditioning and singular X_S, baseline and optimized |
 | `make perf-figures` | the two performance figures |
+| `make rao-blackwell` | extension: Rao-Blackwellized success probability for the identity design ([docs/EXTENSIONS.md](docs/EXTENSIONS.md)) |
 
 
 **Estimated runtime** (Apple M5 laptop):
@@ -94,6 +97,8 @@ The simulation can also be run directly, for example
 | `results/figures/fig5_sparse_by_regime` | extension (not in the paper): sparse random design, q = 0.1 |
 | `results/figures/perf_complexity` | time of one replicate vs n and p, baseline vs optimized (log-log) |
 | `results/figures/perf_speedup` | total time baseline vs optimized, and parallel speedup |
+| `results/figures/ext_rao_blackwell` | extension: Rao-Blackwell vs indicator estimates, and their variance ratio |
+| `results/extensions/rao_blackwell.csv` | extension: both estimates and their standard errors per condition |
 | `results/profiling/` | profiler output, complexity timings, stability check and benchmark results |
 
 ## Repository structure
@@ -109,8 +114,9 @@ The simulation can also be run directly, for example
 │   ├── complexity.py    # runtime vs n and p
 │   ├── stability.py     # numerical stability check
 │   ├── benchmark.py     # baseline vs optimized timing, speedup vs workers
-│   └── perf_figures.py  # performance figures
-├── docs/                # BASELINE.md, OPTIMIZATION.md
+│   ├── perf_figures.py  # performance figures
+│   └── rao_blackwell.py # extension: Rao-Blackwellized success probability
+├── docs/                # BASELINE.md, OPTIMIZATION.md, EXTENSIONS.md
 ├── tests/               # DGP verification, method correctness, output validation, reproducibility
 ├── results/             # summary tables and figures (raw results are git-ignored)
 ├── data/
