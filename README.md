@@ -121,3 +121,7 @@ The simulation can also be run directly, for example
 ├── Makefile
 └── requirements.txt
 ```
+
+## Use of AI
+
+For Unit 3 I used Claude (Anthropic) as a coding assistant. It explained the profiling tools, drafted code, and documented the numerical results. I reviewed, edited and ran all code myself, checked the results against the Unit 2 baseline, and made the final decisions on what to keep.
