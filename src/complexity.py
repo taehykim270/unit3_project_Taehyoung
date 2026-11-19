@@ -1,10 +1,10 @@
 """
 Empirical computational complexity of one simulation replicate.
 
-Times DGP and the PDW check separately, on two grids:
+Times data generation (DGP) and the PDW check separately, on two grids:
     - n grid: p = 512 fixed, n varies through theta
     - p grid: theta = 1 fixed, p varies (k and n grow with p)
-then fits log(time) = a + b * log(x); the slope b estimates the exponent in time.
+then fits log(time) = a + b * log(x); the slope b estimates the exponent in time ~ x^b.
 
 Run from the project root:
     python -m src.complexity

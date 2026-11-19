@@ -156,10 +156,10 @@ class PDWClosedForm(PrimalDualWitness):
 
 
 class PDWFast(SupportRecoveryCheck):
-    """Optimized PDW (Unit 3): Step 1 in closed form, solved by Cholesky, with a singularity guard.
+    """Optimized PDW (Unit 3): Step 1 in closed form, solved by Cholesky, with a check for singular X_S^T X_S.
 
-    Same verdict as PDWRestrictedLasso (Lemma 3; see PDWClosedForm) without an iterative solver.
-    X_S^T X_S = L L^T is factorized once; if it is singular or numerically singular, X_S is
+    Same success/failure result as PDWRestrictedLasso (Lemma 3; see PDWClosedForm) without an iterative
+    solver. X_S^T X_S = L L^T is factorized once; if it is singular or nearly singular, X_S is
     rank-deficient, the restricted Lasso has no unique solution and the PDW fails. The baseline
     reports failure in these cases too (docs/BASELINE.md, Section 4).
     """
@@ -167,7 +167,7 @@ class PDWFast(SupportRecoveryCheck):
     name = "pdw_fast"
 
     def __init__(self, rcond_tol=1e-12):
-        self.rcond_tol = rcond_tol      # declare singular if cond(X_S^T X_S) is certainly above 1 / rcond_tol
+        self.rcond_tol = rcond_tol      # treat as singular when cond(X_S^T X_S) > 1 / rcond_tol (quick test)
 
     def check(self, data, lam):
         X, y, beta, support = data["X"], data["y"], data["beta"], data["support"]
@@ -217,7 +217,7 @@ class PDWFast(SupportRecoveryCheck):
 # ===========================================================================
 
 def _failed_check():
-    """PDW verdict when X_S^T X_S is singular (n <= k or rank-deficient X_S): failure, diagnostics undefined."""
+    """PDW result when X_S^T X_S is singular (n <= k or rank-deficient X_S): failure, diagnostics undefined."""
     return {"success": False, "dual_feasible": False, "sign_consistent": False,
             "max_abs_z": np.nan, "sign_margin": np.nan,
             "n_violations": np.nan, "n_sign_errors": np.nan, "solver_converged": np.nan}

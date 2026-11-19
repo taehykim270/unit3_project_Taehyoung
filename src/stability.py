@@ -1,6 +1,6 @@
 """
 Numerical stability check: warnings, exceptions, solver convergence, conditioning of X_S
-and near-ties, for every condition.
+and results within 1e-6 of a success/failure threshold, for every condition.
 
 Run from the project root:
     python -m src.stability                  # all 864 conditions, 10 reps each

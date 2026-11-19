@@ -17,7 +17,7 @@ from src.simulation import CONFIG, IMPLS, run_simulation
 
 
 def time_run(impl, n_jobs, n_reps):
-    """Wall-clock seconds for the full condition grid with n_reps replicates each."""
+    """Wall-clock seconds to run all 864 conditions with n_reps replicates each."""
     config = copy.deepcopy(CONFIG)
     config.update(IMPLS[impl], n_jobs=n_jobs, n_reps=n_reps)
     start = time.perf_counter()

@@ -4,7 +4,7 @@ Profile a reduced version of the simulation study with cProfile.
 Run from the project root:
     python -m src.profile_sim                       # all conditions, 10 reps each
     python -m src.profile_sim --n-reps 5 --top 30
-    python -m src.profile_sim --lines               # line-by-line profile of the hot functions
+    python -m src.profile_sim --lines               # line-by-line profile of the slowest functions
 """
 
 import argparse
