@@ -42,7 +42,7 @@ setup:
 	venv/bin/python -m pip install -r requirements.txt
 
 # Run complete simulation pipeline and generate all outputs
-all: figures
+all: figures perf-figures
 
 # Run the simulation and save raw results
 simulate: $(RAW)
