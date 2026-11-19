@@ -8,7 +8,7 @@ Hardware: Apple M5 (4 performance + 6 efficiency cores), 16 GB RAM.
 | Version | Full study (172,800 replicates) | Speedup |
 |---|---:|---:|
 | Baseline (Unit 2), 1 core | 446.4 s | 1.00x |
-| Optimized, all cores (`make parallel`) | **92.8 s** | **4.81x** |
+| Optimized, all cores (`make parallel`) | **100.4 s** | **4.45x** |
 
 Step by step (`python -m src.simulation --n-reps 10`, all 864 conditions, 8,640 replicates):
 
@@ -17,14 +17,15 @@ Step by step (`python -m src.simulation --n-reps 10`, all 864 conditions, 8,640 
 | 0 | Baseline (Unit 2) | | 22.3 | 1.00x |
 | 1 | Closed-form PDW with Cholesky and a singularity guard | algorithmic, numerical stability | 17.0 | 1.31x |
 | 2 | No column copies in the dual step | algorithmic / array programming | 14.3 | 1.56x |
+| 2b | Baseline solver as fallback when the closed-form signs are wrong (all outputs = baseline) | numerical stability | 16.3 | 1.37x |
 | 3 | Parallel conditions (joblib, all cores) | parallelization | 6.8 | 3.28x |
 | - | Toeplitz design via AR(1) recursion | tried, rejected | slower | - |
 
 ![Total time and parallel speedup](../results/figures/perf_speedup.png)
 
-**Correctness:** `tests/test_regression.py` checks that both versions give exactly the same results
-(per-replicate success/failure, per-condition success rates, serial = parallel), including the edge
-cases n <= k and singular X_S. Differences in the full study are explained [at the end](#differences-from-the-unit-2-results).
+**Correctness:** `tests/test_regression.py` checks that both versions give the same results on every
+replicate (success/failure and all diagnostics, up to the solver tolerance), that serial = parallel,
+and the edge cases n <= k and singular X_S. Differences in the full study are explained [at the end](#differences-from-the-unit-2-results).
 
 ---
 
@@ -40,28 +41,33 @@ $$
 $$
 
 which gives the same success/failure result as the restricted Lasso (Lemma 3). It is solved by a
-Cholesky factorization $X_S^\top X_S = LL^\top$, which also detects a singular $X_S^\top X_S$; that
-case is reported as failure, as the baseline does. New class `PDWFast` in `src/methods.py`.
+Cholesky factorization $X_S^\top X_S = LL^\top$. If the solution has exactly the signs
+$\mathrm{sign}(\beta^*_S)$, it is the restricted Lasso solution (it meets the Lasso's optimality
+condition, which has a unique solution when $X_S$ has full rank). Otherwise (a sign is wrong, or
+$X_S^\top X_S$ is singular) the baseline solver is run instead, so every output equals the baseline's. New class `PDWFast` in `src/methods.py`.
 
 ```python
 # before (PDWRestrictedLasso): iterative solver
 beta_check_S, converged = _lasso_fit_status(X_S, y, lam, tol=1e-10)   # sklearn Lasso(...).fit(X_S, y)
 
-# after (PDWFast): one linear solve
+# after (PDWFast): one linear solve, baseline solver only as fallback
 try:
     chol = cho_factor(X_S.T @ X_S)
 except np.linalg.LinAlgError:              # X_S rank-deficient
-    return _failed_check()
+    return self.fallback.check(data, lam)
 beta_check_S = cho_solve(chol, X_S.T @ y - n * lam * z_S)
+if np.min(z_S * beta_check_S) <= self.fallback.sign_tol:   # a sign is wrong
+    return self.fallback.check(data, lam)
 ```
 
 **Impact.** 22.3 s -> 17.0 s (1.31x). Check time at n = 5636, p = 512: 19.3 ms -> 3.7 ms per
-replicate. No exceptions on singular $X_S$. Same success/failure result on 8,640 / 8,640 replicates.
+replicate. No exceptions on singular $X_S$. About 25% of replicates use the fallback (mostly
+$\theta \le 1$, where $n$ is small), which costs 14% (14.3 s -> 16.3 s, step 2b) but makes every output
+equal to the baseline's.
 
-**Trade-offs.** Relies on Lemma 3 instead of solving the Lasso directly. Forming $X_S^\top X_S$ squares
-the condition number, $\kappa(X_S^\top X_S) = \kappa(X_S)^2$; a QR factorization of $X_S$ would avoid
-this at about twice the cost. On failed replicates the PDW diagnostics differ from the
-baseline (see the end).
+**Trade-offs.** Forming $X_S^\top X_S$ squares the condition number, $\kappa(X_S^\top X_S) = \kappa(X_S)^2$;
+a QR factorization of $X_S$ would avoid this at about twice the cost. Without the fallback the code
+would be 14% faster, but the PDW diagnostics of failed replicates would differ from the baseline.
 
 ## 2. No column copies in the dual-feasibility step
 
@@ -89,7 +95,7 @@ Whole run 17.0 s -> 14.3 s. Same success/failure result on 8,640 / 8,640 replica
 
 ## 3. Parallelization across conditions (joblib)
 
-**Problem.** After steps 1-2, 82% of the time is data generation, mostly random number generation.
+**Problem.** After steps 1-2b, about 70% of the time is data generation, mostly random number generation.
 It cannot be made cheaper without changing the random draws, but the 864 conditions are independent.
 
 **Solution.** Run the conditions in worker processes with `joblib.Parallel` (`--n-jobs`). Every replicate
@@ -110,8 +116,8 @@ results = Parallel(n_jobs=config["n_jobs"], return_as="generator")(
 
 | n_jobs | 1 | 2 | 4 | 6 | 8 | 10 |
 |---|---:|---:|---:|---:|---:|---:|
-| Time (s) | 29.3 | 20.7 | 13.3 | 11.6 | 9.9 | 10.0 |
-| Speedup vs 1 worker | 1.00 | 1.41 | 2.20 | 2.53 | 2.97 | 2.92 |
+| Time (s) | 32.9 | 22.5 | 14.5 | 12.3 | 11.4 | 10.6 |
+| Speedup vs 1 worker | 1.00 | 1.46 | 2.27 | 2.67 | 2.89 | 3.10 |
 
 The speedup is far below the number of workers: the M5 has only 4 performance cores, each worker
 pays a start-up cost, and all workers share the memory bandwidth.
@@ -144,21 +150,22 @@ cProfile, all 864 conditions with 10 reps each (`make profile`):
 
 | Component | Baseline (s) | Optimized (s) |
 |---|---:|---:|
-| Data generation | 12.2 | 12.0 |
-| PDW check | 12.2 | **2.4** |
-| Total | 24.6 | 14.6 |
-| Function calls | 14.2 million | 1.5 million |
+| Data generation | 12.2 | 12.4 |
+| PDW check | 12.2 | **4.7** (2.2 of it in the fallback) |
+| Total | 24.6 | 17.4 |
+| Function calls | 14.2 million | 4.7 million |
 
-Time of one replicate vs n and vs p (`make complexity`). The optimized check is about 5x faster and
-now grows almost linearly in n (slope 0.88 vs 0.49), because the closed form has no iteration count
-that changes with n. Data generation is unchanged and is now the largest cost.
+Time of one replicate vs n and vs p (`make complexity`). For theta >= 0.4 the optimized check is
+5-8x faster (n = 5636: 19.3 ms -> 4.0 ms) and grows linearly in n. At theta <= 0.2 most replicates
+use the fallback, so the check costs about the same as the baseline there. Data generation is
+unchanged and is now the largest cost.
 
 ![Complexity, baseline vs optimized](../results/figures/perf_complexity.png)
 
 ## Lessons learned
 
 - **Best return on investment:** the closed form removed the largest single cost, and the copy fix
-  (2 lines) made its line 13x faster. Parallelization gave the largest factor (2.97x) with little code,
+  (2 lines) made its line 13x faster. Parallelization gave the largest factor (3.10x) with little code,
   because the Unit 2 seeding rule (one seed per replicate) already made the results independent of
   execution order.
 - **Surprises:** half of the baseline time was spent generating data, mostly drawing random numbers, not
@@ -169,10 +176,9 @@ that changes with n. Data generation is unchanged and is now the largest cost.
 ## Differences from the Unit 2 results
 
 Full study rerun with the optimized code (`make parallel`, 172,800 replicates) and compared with the Unit 2 tables:
-- **Success rates are identical in all 864 conditions**; thresholds, curve collapse and the paper
-  comparison agree up to rounding. Figures 1-5 (success curves) are unchanged.
-- **PDW diagnostics differ on failed replicates** (`dual_feasible_rate` by up to 0.04, `max_abs_z`
-  quantiles, numbers of violations and sign errors). When recovery fails, the baseline's restricted
-  Lasso and the closed form (which assumes the true signs) produce different beta_check_S, so they
-  certify the failure at different PDW steps. Both are correct by Lemma 3, and on successful replicates
-  the diagnostics agree. This changes `fig1_pdw_diagnostics` only.
+- **All tables agree with Unit 2**, including the PDW diagnostics: every column of `summary.csv`,
+  `thresholds.csv`, `collapse.csv` and `paper_comparison.csv` differs by at most 7.9e-11 (the
+  baseline solver's tolerance). All figures are unchanged.
+- An earlier version without the fallback (always the closed form) gave identical success rates but
+  different diagnostics on failed replicates, because the closed form assumes the true signs; the
+  fallback (step 2b) removed this difference.

@@ -1,58 +1,58 @@
 ============================== sorted by cumulative time ==============================
-         14146938 function calls (14146826 primitive calls) in 24.625 seconds
+         14109550 function calls (14109438 primitive calls) in 25.608 seconds
 
    Ordered by: cumulative time
-   List reduced from 645 to 20 due to restriction <20>
+   List reduced from 644 to 20 due to restriction <20>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-      4/3    0.000    0.000   24.698    8.233 threading.py:651(wait)
-      4/3    0.000    0.000   24.674    8.225 threading.py:337(wait)
-    16/11    0.001    0.000   24.629    2.239 {method 'acquire' of '_thread.lock' objects}
-      2/1    0.001    0.000   24.621   24.621 simulation.py:157(run_simulation)
-      865    0.001    0.000   24.611    0.028 std.py:1166(__iter__)
-      865    0.002    0.000   24.543    0.028 simulation.py:164(<genexpr>)
-      864    0.036    0.000   24.517    0.028 simulation.py:132(run_condition)
-     8640    0.233    0.000   12.264    0.001 dgps.py:145(generate_replicate)
-     8640    4.089    0.000   12.143    0.001 methods.py:82(check)
-     8520    0.004    0.000    7.634    0.001 methods.py:136(restricted_solution)
-     8520    0.023    0.000    7.630    0.001 methods.py:226(_lasso_fit_status)
-     8520    0.028    0.000    7.548    0.001 base.py:1381(wrapper)
-     4320    6.794    0.002    6.806    0.002 dgps.py:77(generate_toeplitz_design)
-     8520    0.056    0.000    6.698    0.001 _coordinate_descent.py:1096(fit)
-     8520    0.014    0.000    4.582    0.001 _param_validation.py:187(wrapper)
-     8520    4.262    0.001    4.563    0.001 _coordinate_descent.py:449(enet_path)
-     2160    2.842    0.001    2.842    0.001 dgps.py:99(generate_sparse_design)
-     2160    2.175    0.001    2.175    0.001 dgps.py:56(generate_gaussian_design)
-    25560    0.111    0.000    1.418    0.000 validation.py:733(check_array)
-     8520    0.017    0.000    1.239    0.000 validation.py:2932(validate_data)
+      4/3    0.000    0.000   25.732    8.577 threading.py:651(wait)
+      4/3    0.000    0.000   25.612    8.537 threading.py:337(wait)
+    16/11    0.007    0.000   25.612    2.328 {method 'acquire' of '_thread.lock' objects}
+      2/1    0.000    0.000   25.605   25.605 simulation.py:157(run_simulation)
+      865    0.001    0.000   25.595    0.030 std.py:1166(__iter__)
+      865    0.002    0.000   25.582    0.030 simulation.py:164(<genexpr>)
+      864    0.038    0.000   25.454    0.029 simulation.py:132(run_condition)
+     8640    4.444    0.001   12.796    0.001 methods.py:82(check)
+     8640    0.231    0.000   12.590    0.001 dgps.py:145(generate_replicate)
+     8520    0.004    0.000    7.904    0.001 methods.py:136(restricted_solution)
+     8520    0.026    0.000    7.899    0.001 methods.py:223(_lasso_fit_status)
+     8520    0.030    0.000    7.809    0.001 base.py:1381(wrapper)
+     4320    6.920    0.002    6.926    0.002 dgps.py:77(generate_toeplitz_design)
+     8520    0.061    0.000    6.895    0.001 _coordinate_descent.py:1096(fit)
+     8520    0.016    0.000    4.637    0.001 _param_validation.py:187(wrapper)
+     8520    4.293    0.001    4.616    0.001 _coordinate_descent.py:449(enet_path)
+     2160    2.920    0.001    2.920    0.001 dgps.py:99(generate_sparse_design)
+     2160    2.284    0.001    2.284    0.001 dgps.py:56(generate_gaussian_design)
+    25560    0.120    0.000    1.509    0.000 validation.py:733(check_array)
+     8520    0.019    0.000    1.326    0.000 validation.py:2932(validate_data)
 
 
 ============================== sorted by own time (tottime) ==============================
-         14146938 function calls (14146826 primitive calls) in 24.625 seconds
+         14109550 function calls (14109438 primitive calls) in 25.608 seconds
 
    Ordered by: internal time
-   List reduced from 645 to 20 due to restriction <20>
+   List reduced from 644 to 20 due to restriction <20>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-     4320    6.794    0.002    6.806    0.002 dgps.py:77(generate_toeplitz_design)
-     8520    4.262    0.001    4.563    0.001 _coordinate_descent.py:449(enet_path)
-     8640    4.089    0.000   12.143    0.001 methods.py:82(check)
-     2160    2.842    0.001    2.842    0.001 dgps.py:99(generate_sparse_design)
-     2160    2.175    0.001    2.175    0.001 dgps.py:56(generate_gaussian_design)
-     8520    0.271    0.000    0.271    0.000 {built-in method numpy._core._multiarray_umath.c_einsum}
-     8640    0.233    0.000   12.264    0.001 dgps.py:145(generate_replicate)
-   119880    0.157    0.000    0.157    0.000 {method 'reduce' of 'numpy.ufunc' objects}
-    93964    0.136    0.000    0.150    0.000 {built-in method numpy.array}
-1594095/1594091    0.129    0.000    0.248    0.000 {built-in method builtins.isinstance}
-    25560    0.111    0.000    1.418    0.000 validation.py:733(check_array)
-   357840    0.095    0.000    0.095    0.000 inspect.py:1717(_shadowed_dict)
-     8640    0.082    0.000    0.148    0.000 _arraysetops_impl.py:806(_isin)
-     8640    0.079    0.000    0.127    0.000 simulation.py:97(replicate_rng)
-     8640    0.078    0.000    0.174    0.000 dgps.py:113(generate_beta)
-     8520    0.073    0.000    0.240    0.000 inspect.py:2312(_signature_from_function)
-    25560    0.069    0.000    0.343    0.000 validation.py:107(_assert_all_finite)
-   102840    0.067    0.000    0.235    0.000 fromnumeric.py:66(_wrapreduction)
-    17280    0.066    0.000    0.066    0.000 {built-in method numpy._core._multiarray_umath._unique_hash}
-   119280    0.063    0.000    0.266    0.000 inspect.py:1730(getattr_static)
+     4320    6.920    0.002    6.926    0.002 dgps.py:77(generate_toeplitz_design)
+     8640    4.444    0.001   12.796    0.001 methods.py:82(check)
+     8520    4.293    0.001    4.616    0.001 _coordinate_descent.py:449(enet_path)
+     2160    2.920    0.001    2.920    0.001 dgps.py:99(generate_sparse_design)
+     2160    2.284    0.001    2.284    0.001 dgps.py:56(generate_gaussian_design)
+     8520    0.292    0.000    0.292    0.000 {built-in method numpy._core._multiarray_umath.c_einsum}
+     8640    0.231    0.000   12.590    0.001 dgps.py:145(generate_replicate)
+   119880    0.170    0.000    0.170    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+    93964    0.143    0.000    0.159    0.000 {built-in method numpy.array}
+1594095/1594091    0.137    0.000    0.263    0.000 {built-in method builtins.isinstance}
+    25560    0.120    0.000    1.509    0.000 validation.py:733(check_array)
+   357840    0.099    0.000    0.099    0.000 inspect.py:1717(_shadowed_dict)
+     8640    0.088    0.000    0.192    0.000 dgps.py:113(generate_beta)
+     8640    0.087    0.000    0.154    0.000 _arraysetops_impl.py:806(_isin)
+     8640    0.082    0.000    0.133    0.000 simulation.py:97(replicate_rng)
+     8520    0.081    0.000    0.256    0.000 inspect.py:2312(_signature_from_function)
+    25560    0.078    0.000    0.374    0.000 validation.py:107(_assert_all_finite)
+    17280    0.076    0.000    0.076    0.000 {built-in method numpy._core._multiarray_umath._unique_hash}
+   102840    0.069    0.000    0.251    0.000 fromnumeric.py:66(_wrapreduction)
+   119280    0.067    0.000    0.281    0.000 inspect.py:1730(getattr_static)
 
 

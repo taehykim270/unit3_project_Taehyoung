@@ -16,8 +16,8 @@ is not included in this repository; see the DOI above.
 
 ## Unit 3: performance
 
-The simulation study was profiled and optimized: the full study now takes **93 s instead of 446 s
-(4.8x)** with identical success rates. Baseline measurements (profiling, complexity, numerical
+The simulation study was profiled and optimized: the full study now takes **100 s instead of 446 s
+(4.5x)** with the same results. Baseline measurements (profiling, complexity, numerical
 stability) are in [docs/BASELINE.md](docs/BASELINE.md); the optimizations, their impact and trade-offs
 are in [docs/OPTIMIZATION.md](docs/OPTIMIZATION.md). `--impl baseline` runs the original Unit 2 code.
 
@@ -66,7 +66,7 @@ summary tables and figures. It takes about 3 minutes. All `make` targets use
 
 - `make setup`: about 1 minute (downloads packages)
 - `make test`: about 10 seconds
-- `make all` from scratch: about 2 minutes (simulation 93 s on all cores; the Unit 2 code took 446 s on one core)
+- `make all` from scratch: about 2 minutes (simulation 100 s on all cores; the Unit 2 code took 446 s on one core)
 - `make reproduce`: about 3 minutes in total
 - `make profile`, `make stability-check`, `make benchmark`: about 2-3 minutes each; `make complexity`: under a minute
 
